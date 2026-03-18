@@ -1,42 +1,48 @@
 /**
  * middleware.ts
  *
- * Next.js edge middleware that protects all authenticated routes. It runs
- * before any page renders, at the CDN edge — so unauthenticated users get
- * a fast redirect to /login without the server ever rendering the page.
- *
- * We use Auth.js's built-in `auth` export as middleware. The `authorized`
- * callback checks if the request path matches a protected pattern. If
- * there's no token and the route is protected, it redirects to /login.
- * Public routes (/, /login, /register, /api/webhooks) pass through.
+ * Lightweight Next.js edge middleware that protects authenticated routes.
+ * Instead of importing the full auth config (which includes Prisma and bcryptjs),
+ * we simply check for the Auth.js session cookie. This keeps the Edge bundle
+ * under 1MB for Vercel deployment.
  */
-import { auth } from "@/auth";
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 
 const protectedPaths = [
   "/dashboard",
   "/reports",
   "/team",
+  "/teams",
   "/upgrade",
   "/admin",
   "/budgets",
   "/settings",
 ];
 
-export default auth((req) => {
+export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
+  // Check if the path is protected
   const isProtected = protectedPaths.some((path) =>
     pathname.startsWith(path)
   );
 
-  if (isProtected && !req.auth) {
+  if (!isProtected) {
+    return NextResponse.next();
+  }
+
+  // Check for Auth.js session cookie (production or development)
+  const sessionToken = req.cookies.get("authjs.session-token") ||
+                       req.cookies.get("__Secure-authjs.session-token");
+
+  if (!sessionToken) {
     const loginUrl = new URL("/login", req.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: [
