@@ -1,0 +1,293 @@
+// prisma/schema.prisma
+//
+// The single source of truth for our data model. Uses Neon Postgres.
+// Supports personal workspaces AND team workspaces with full RBAC,
+// invitations, activity feeds, team budgets, and approval workflows.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── USER ────────────────────────────────────────────────────────────
+model User {
+  id             String           @id @default(cuid())
+  email          String           @unique
+  emailVerified  DateTime?
+  name           String?
+  image          String?
+  hashedPassword String?
+  plan           Plan             @default(FREE)
+  subscriptionId String?
+  monthlyBudget  Float?
+
+  usage          Usage[]
+  expenses       Expense[]
+  budgets        Budget[]
+  categories     Category[]
+
+  // Teams the user owns
+  ownedTeams     Team[]           @relation("TeamOwner")
+  // Team memberships
+  teamMembers    TeamMember[]
+  // Invitations the user sent
+  sentInvitations TeamInvitation[] @relation("InvitationSender")
+  // Activity log entries
+  activities     TeamActivity[]
+  // Notifications
+  notifications  Notification[]
+
+  accounts       Account[]
+  sessions       Session[]
+
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
+
+// ─── AUTH.JS ─────────────────────────────────────────────────────────
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── EXPENSE ─────────────────────────────────────────────────────────
+model Expense {
+  id             String         @id @default(cuid())
+  amount         Float
+  currency       String         @default("NPR")
+  category       String
+  description    String?
+  date           DateTime       @default(now())
+  receiptUrl     String?
+  tags           String[]
+  approvalStatus ApprovalStatus @default(APPROVED)
+
+  // Personal expense (userId set, teamId null) OR team expense (both set)
+  userId         String
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  teamId         String?
+  team           Team?          @relation(fields: [teamId], references: [id], onDelete: SetNull)
+
+  createdAt      DateTime       @default(now())
+
+  @@index([userId, date])
+  @@index([teamId, date])
+}
+
+// ─── USAGE ───────────────────────────────────────────────────────────
+model Usage {
+  id     String @id @default(cuid())
+  userId String
+  month  String
+  count  Int    @default(0)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, month])
+}
+
+// ─── TEAM ────────────────────────────────────────────────────────────
+model Team {
+  id          String           @id @default(cuid())
+  name        String
+  avatar      String?
+  description String?
+  ownerId     String
+
+  owner       User             @relation("TeamOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members     TeamMember[]
+  expenses    Expense[]
+  budgets     TeamBudget[]
+  categories  TeamCategory[]
+  invitations TeamInvitation[]
+  activities  TeamActivity[]
+
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model TeamMember {
+  id       String   @id @default(cuid())
+  teamId   String
+  userId   String
+  role     TeamRole @default(MEMBER)
+  joinedAt DateTime @default(now())
+
+  team     Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@index([userId])
+}
+
+model TeamInvitation {
+  id        String       @id @default(cuid())
+  teamId    String
+  email     String
+  role      TeamRole     @default(MEMBER)
+  token     String       @unique
+  invitedBy String
+  expiresAt DateTime
+  status    InviteStatus @default(PENDING)
+  createdAt DateTime     @default(now())
+
+  team      Team         @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  inviter   User         @relation("InvitationSender", fields: [invitedBy], references: [id])
+
+  @@index([email])
+}
+
+model TeamActivity {
+  id          String       @id @default(cuid())
+  teamId      String
+  userId      String
+  action      ActivityType
+  description String
+  metadata    Json?
+  createdAt   DateTime     @default(now())
+
+  team        Team         @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id])
+
+  @@index([teamId, createdAt])
+}
+
+model TeamCategory {
+  id      String @id @default(cuid())
+  name    String
+  icon    String @default("📁")
+  color   String @default("#6366f1")
+  teamId  String
+  team    Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, name])
+}
+
+model TeamBudget {
+  id        String   @id @default(cuid())
+  name      String
+  amount    Float
+  period    String   @default("monthly")
+  category  String?
+  startDate DateTime @default(now())
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+// ─── NOTIFICATION ────────────────────────────────────────────────────
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("info")
+  read      Boolean  @default(false)
+  link      String?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([userId, read])
+}
+
+// ─── ENUMS ───────────────────────────────────────────────────────────
+enum Plan {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+enum TeamRole {
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+enum ActivityType {
+  EXPENSE_ADDED
+  EXPENSE_EDITED
+  EXPENSE_DELETED
+  MEMBER_INVITED
+  MEMBER_JOINED
+  MEMBER_LEFT
+  MEMBER_REMOVED
+  ROLE_CHANGED
+  BUDGET_CREATED
+  BUDGET_UPDATED
+  CATEGORY_ADDED
+  APPROVAL_REQUESTED
+  APPROVAL_GRANTED
+  APPROVAL_REJECTED
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// ─── PERSONAL BUDGET (unchanged) ─────────────────────────────────────
+model Budget {
+  id        String   @id @default(cuid())
+  name      String
+  amount    Float
+  period    String   @default("monthly")
+  category  String?
+  startDate DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Category {
+  id     String @id @default(cuid())
+  name   String
+  icon   String @default("📁")
+  color  String @default("#6366f1")
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name])
+}
