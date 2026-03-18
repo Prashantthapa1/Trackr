@@ -60,11 +60,13 @@ export function UpgradePricingClient({ user }: UpgradePricingClientProps) {
 
   const [annual, setAnnual] = useState(false);
   const [confettiFired, setConfettiFired] = useState(false);
+  const [upgrading, setUpgrading] = useState(false);
 
   const isPro = user.plan !== "FREE";
   const monthlyPrice = 499;
   const annualPrice = 399;
   const displayPrice = annual ? annualPrice : monthlyPrice;
+  const isDev = process.env.NODE_ENV === "development";
 
   useEffect(() => {
     if (upgraded && !confettiFired) {
@@ -114,6 +116,23 @@ export function UpgradePricingClient({ user }: UpgradePricingClientProps) {
           theme: "light",
         },
       });
+    }
+  }
+
+  // Dev-only: Instant upgrade for testing
+  async function handleDevUpgrade() {
+    setUpgrading(true);
+    try {
+      const res = await fetch("/api/dev/upgrade", {
+        method: "POST",
+      });
+      if (res.ok) {
+        window.location.href = "/upgrade?upgraded=true";
+      }
+    } catch (err) {
+      console.error("Dev upgrade failed:", err);
+    } finally {
+      setUpgrading(false);
     }
   }
 
@@ -238,10 +257,23 @@ export function UpgradePricingClient({ user }: UpgradePricingClientProps) {
               ))}
             </ul>
             {!isPro && (
-              <Button className="w-full" size="lg" onClick={handleCheckout}>
-                <Sparkles className="mr-2 h-4 w-4" />
-                Upgrade — NPR {displayPrice}/mo
-              </Button>
+              <div className="space-y-3">
+                <Button className="w-full" size="lg" onClick={handleCheckout}>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Upgrade — NPR {displayPrice}/mo
+                </Button>
+                {isDev && (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    size="lg"
+                    onClick={handleDevUpgrade}
+                    disabled={upgrading}
+                  >
+                    {upgrading ? "Upgrading..." : "⚡ Dev: Instant Pro (Testing)"}
+                  </Button>
+                )}
+              </div>
             )}
           </CardContent>
         </Card>

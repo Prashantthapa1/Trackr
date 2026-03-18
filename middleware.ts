@@ -1,10 +1,7 @@
 /**
  * middleware.ts
  *
- * Lightweight Next.js edge middleware that protects authenticated routes.
- * Instead of importing the full auth config (which includes Prisma and bcryptjs),
- * we simply check for the Auth.js session cookie. This keeps the Edge bundle
- * under 1MB for Vercel deployment.
+
  */
 import { NextResponse, type NextRequest } from "next/server";
 

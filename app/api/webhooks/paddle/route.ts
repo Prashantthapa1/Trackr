@@ -1,29 +1,25 @@
 /**
  * app/api/webhooks/paddle/route.ts
  *
- * Paddle webhook handler. This is the most critical billing integration point.
- * Paddle sends POST requests here whenever a subscription event occurs
- * (created, updated, cancelled, payment failed). We:
- *
- * 1. Verify the webhook signature to prevent spoofing (Paddle signs each
- *    request with a shared secret).
- * 2. Parse the event type and extract the customer email.
- * 3. Map the email to our User record and update their plan accordingly.
+ * Paddle webhook handler for Paddle Billing API.
+ * Verifies webhook signatures and updates user subscription status.
  *
  * This route does NOT require authentication — Paddle must reach it
  * anonymously. That's why middleware.ts excludes /api/webhooks from auth.
  */
 import { NextResponse, type NextRequest } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { paddle } from "@/lib/paddle";
+import { prisma } from "@/lib/prisma";
 import type { EventEntity } from "@paddle/paddle-node-sdk";
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
+    // CRITICAL: Use raw body string, NOT parsed JSON
     const rawBody = await request.text();
-    const signature = request.headers.get("paddle-signature");
 
+    const signature = request.headers.get("paddle-signature");
     if (!signature) {
+      console.error("Missing paddle-signature header");
       return NextResponse.json(
         { error: "Missing Paddle signature" },
         { status: 400 }
@@ -31,27 +27,48 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     if (!paddle) {
-      console.error("Paddle SDK not initialized");
+      console.error("Paddle SDK not initialized - check PADDLE_API_KEY");
       return NextResponse.json(
         { error: "Paddle not configured" },
         { status: 500 }
       );
     }
 
-    // Verify webhook signature
-    let event: EventEntity | null;
-    try {
-      const webhookSecret = process.env.PADDLE_WEBHOOK_SECRET;
-      if (!webhookSecret) {
-        throw new Error("PADDLE_WEBHOOK_SECRET not set");
+    // Verify and parse webhook
+    let event: EventEntity | null = null;
+
+    const webhookSecret = process.env.PADDLE_WEBHOOK_SECRET;
+
+    if (webhookSecret) {
+      // Production: Verify signature with webhook secret
+      try {
+        event = paddle.webhooks.unmarshal(rawBody, webhookSecret, signature);
+      } catch (err) {
+        console.error("Webhook signature verification failed:", err);
+        return NextResponse.json(
+          { error: "Invalid webhook signature" },
+          { status: 400 }
+        );
       }
-      event = paddle.webhooks.unmarshal(rawBody, webhookSecret, signature);
-    } catch (err) {
-      console.error("Webhook signature verification failed:", err);
-      return NextResponse.json(
-        { error: "Invalid webhook signature" },
-        { status: 401 }
-      );
+    } else {
+      // Development/Sandbox: Parse without verification (NOT recommended for production)
+      console.warn("PADDLE_WEBHOOK_SECRET not set - parsing without verification");
+      try {
+        const parsed = JSON.parse(rawBody);
+        event = {
+          eventId: parsed.event_id,
+          eventType: parsed.event_type,
+          occurredAt: parsed.occurred_at,
+          notificationId: parsed.notification_id,
+          data: parsed.data,
+        } as EventEntity;
+      } catch (err) {
+        console.error("Failed to parse webhook body:", err);
+        return NextResponse.json(
+          { error: "Invalid webhook body" },
+          { status: 400 }
+        );
+      }
     }
 
     if (!event) {
@@ -71,7 +88,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       null;
 
     if (!customerEmail) {
-      console.error("No customer email in webhook event:", event.eventType);
+      console.log("No customer email in webhook event:", event.eventType);
       return NextResponse.json({ received: true });
     }
 
@@ -80,7 +97,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     switch (event.eventType) {
       case "subscription.created":
       case "subscription.activated": {
-        // User has successfully subscribed — upgrade to PRO
         await prisma.user.update({
           where: { email: customerEmail },
           data: {
@@ -93,10 +109,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }
 
       case "subscription.canceled": {
-        // Subscription cancelled — downgrade to FREE
-        // Note: Paddle sends this when the subscription actually ends,
-        // not when the user clicks "cancel" (that's subscription.updated
-        // with scheduled_change).
         await prisma.user.update({
           where: { email: customerEmail },
           data: {
@@ -109,7 +121,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }
 
       case "subscription.updated": {
-        // Could be a plan change, billing update, or scheduled cancellation
         const status = eventData.status as string;
         if (status === "canceled" || status === "past_due") {
           await prisma.user.update({
@@ -125,7 +136,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }
 
       case "transaction.completed": {
-        // Payment succeeded — ensure user is PRO
         await prisma.user.update({
           where: { email: customerEmail },
           data: { plan: "PRO" },
@@ -135,8 +145,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }
 
       case "transaction.payment_failed": {
-        // Payment failed — log it but don't immediately downgrade
-        // (Paddle will retry and eventually cancel)
         console.warn(`Payment failed for ${customerEmail}`);
         break;
       }
