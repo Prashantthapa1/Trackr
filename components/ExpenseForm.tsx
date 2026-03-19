@@ -40,6 +40,7 @@ export function ExpenseForm({ categories, plan, usage }: ExpenseFormProps) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (loading) return;
 
     if (plan === "FREE" && usage.count >= usage.limit) {
       toast.error(`You've reached your free limit of ${usage.limit} expenses this month!`);

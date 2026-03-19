@@ -36,7 +36,30 @@ export async function GET(
     orderBy: { createdAt: "desc" },
   });
 
-  return NextResponse.json({ success: true, data: budgets });
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+  const expenses = await prisma.expense.findMany({
+    where: {
+      teamId,
+      date: { gte: monthStart, lt: monthEnd },
+    },
+  });
+
+  const budgetsWithSpent = budgets.map((b) => {
+    let spent = 0;
+    if (b.category) {
+      spent = expenses
+        .filter((e) => e.category?.toLowerCase() === b.category?.toLowerCase())
+        .reduce((sum, e) => sum + e.amount, 0);
+    } else {
+      spent = expenses.reduce((sum, e) => sum + e.amount, 0);
+    }
+    return { ...b, spent, categoryName: b.category };
+  });
+
+  return NextResponse.json({ success: true, data: budgetsWithSpent });
 }
 
 export async function POST(

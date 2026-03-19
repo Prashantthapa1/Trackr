@@ -27,6 +27,7 @@ export default async function BudgetsPage() {
       by: ["category"],
       where: {
         userId: user.id,
+        teamId: null,
         date: { gte: monthStart, lt: monthEnd },
       },
       _sum: { amount: true },
@@ -34,6 +35,7 @@ export default async function BudgetsPage() {
     prisma.expense.aggregate({
       where: {
         userId: user.id,
+        teamId: null,
         date: { gte: monthStart, lt: monthEnd },
       },
       _sum: { amount: true },

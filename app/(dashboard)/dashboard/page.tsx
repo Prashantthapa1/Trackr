@@ -27,7 +27,7 @@ export default async function DashboardPage() {
 
   const [expenses, usage, monthTotal, budgets, categorySpending] = await Promise.all([
     prisma.expense.findMany({
-      where: { userId: user.id },
+      where: { userId: user.id, teamId: null },
       orderBy: { date: "desc" },
       take: 50,
     }),
@@ -35,6 +35,7 @@ export default async function DashboardPage() {
     prisma.expense.aggregate({
       where: {
         userId: user.id,
+        teamId: null,
         date: { gte: monthStart, lt: monthEnd },
       },
       _sum: { amount: true },
@@ -48,6 +49,7 @@ export default async function DashboardPage() {
       by: ["category"],
       where: {
         userId: user.id,
+        teamId: null,
         date: { gte: monthStart, lt: monthEnd },
       },
       _sum: { amount: true },
@@ -68,6 +70,7 @@ export default async function DashboardPage() {
   const lastMonthTotal = await prisma.expense.aggregate({
     where: {
       userId: user.id,
+      teamId: null,
       date: { gte: lastMonthStart, lt: lastMonthEnd },
     },
     _sum: { amount: true },

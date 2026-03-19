@@ -40,7 +40,7 @@ declare global {
 const proFeatures = [
   "150+ expenses per month (unlimited with annual)",
   "Unlimited custom categories",
-  "All currencies supported",
+  "Priority support",
   "Receipt image uploads",
   "5-person team workspaces",
   "PDF & CSV export",
@@ -50,7 +50,7 @@ const proFeatures = [
 const freeFeatures = [
   "10 expenses per month",
   "3 categories",
-  "NPR + USD only",
+  "Standard support",
 ];
 
 export function UpgradeModal({

@@ -35,6 +35,7 @@ export default async function ReportsPage() {
       prisma.expense.findMany({
         where: {
           userId: user.id,
+          teamId: null,
           date: { gte: twelveMonthsAgo },
         },
         orderBy: { date: "asc" },
@@ -45,6 +46,7 @@ export default async function ReportsPage() {
       prisma.expense.findMany({
         where: {
           userId: user.id,
+          teamId: null,
           date: { gte: thisMonthStart },
         },
         select: { category: true, amount: true },
@@ -52,6 +54,7 @@ export default async function ReportsPage() {
       prisma.expense.findMany({
         where: {
           userId: user.id,
+          teamId: null,
           date: { gte: lastMonthStart, lt: thisMonthStart },
         },
         select: { category: true, amount: true },

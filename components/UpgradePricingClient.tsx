@@ -31,7 +31,7 @@ const freePlan = {
   features: [
     { text: "10 expenses per month", included: true },
     { text: "3 categories", included: true },
-    { text: "Basic currencies (NPR, USD)", included: true },
+    { text: "Standard support", included: true },
     { text: "Receipt uploads", included: false },
     { text: "Team workspaces", included: false },
     { text: "Visual reports", included: false },
@@ -44,7 +44,7 @@ const proMonthlyPlan = {
   features: [
     { text: "150 expenses per month", included: true },
     { text: "Unlimited categories", included: true },
-    { text: "All currencies", included: true },
+    { text: "Priority support", included: true },
     { text: "Receipt uploads", included: true },
     { text: "5-person team workspaces", included: true },
     { text: "Visual reports & charts", included: true },
@@ -57,7 +57,7 @@ const proAnnualPlan = {
   features: [
     { text: "Unlimited expenses", included: true },
     { text: "Unlimited categories", included: true },
-    { text: "All currencies", included: true },
+    { text: "Premium support", included: true },
     { text: "Receipt uploads", included: true },
     { text: "5-person team workspaces", included: true },
     { text: "Visual reports & charts", included: true },

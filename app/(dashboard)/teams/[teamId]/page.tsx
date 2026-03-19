@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { TeamActivityFeed } from "@/components/team/TeamActivityFeed";
 import { TeamBudgetDashboard } from "@/components/team/TeamBudgetDashboard";
 import { TeamExpensesList } from "@/components/team/TeamExpensesList";
+import { TeamCharts } from "@/components/team/TeamCharts";
 
 export default async function TeamDashboardPage({
   params,
@@ -58,17 +59,13 @@ export default async function TeamDashboardPage({
   // Get this month's spending
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthTotal = await prisma.expense.aggregate({
-    where: {
-      teamId,
-      date: { gte: monthStart },
-    },
-    _sum: { amount: true },
-    _count: true,
+  const currentMonthExpenses = await prisma.expense.findMany({
+    where: { teamId, date: { gte: monthStart } },
+    include: { user: { select: { name: true, email: true } } },
   });
 
-  const totalSpent = monthTotal._sum.amount ?? 0;
-  const expenseCount = monthTotal._count ?? 0;
+  const totalSpent = currentMonthExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const expenseCount = currentMonthExpenses.length;
 
   // Get recent members
   const recentMembers = await prisma.teamMember.findMany({
@@ -183,6 +180,11 @@ export default async function TeamDashboardPage({
           </CardContent>
         </Card>
       </div>
+
+      {/* Charts */}
+      {currentMonthExpenses.length > 0 && (
+        <TeamCharts expenses={currentMonthExpenses} />
+      )}
 
       {/* Two columns: Activity + Budgets */}
       <div className="grid gap-6 lg:grid-cols-2">

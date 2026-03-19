@@ -27,12 +27,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const [expenses, total] = await Promise.all([
     prisma.expense.findMany({
-      where: { userId: user.id },
+      where: { userId: user.id, teamId: null },
       orderBy: { date: "desc" },
       skip,
       take: limit,
     }),
-    prisma.expense.count({ where: { userId: user.id } }),
+    prisma.expense.count({ where: { userId: user.id, teamId: null } }),
   ]);
 
   return NextResponse.json({

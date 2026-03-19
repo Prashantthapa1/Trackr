@@ -37,6 +37,8 @@ export function TeamExpenseForm({ teamId, categories }: TeamExpenseFormProps) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (loading) return;
+    
     setLoading(true);
 
     try {
@@ -56,15 +58,18 @@ export function TeamExpenseForm({ teamId, categories }: TeamExpenseFormProps) {
 
       if (!res.ok) {
         toast.error(data.error ?? "Failed to add expense");
+        setLoading(false);
         return;
       }
 
       toast.success("Team expense added!");
+      setAmount("");
+      setCategory("");
+      setDescription("");
       router.push(`/teams/${teamId}/expenses`);
       router.refresh();
     } catch {
       toast.error("Something went wrong. Please try again.");
-    } finally {
       setLoading(false);
     }
   }

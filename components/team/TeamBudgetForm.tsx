@@ -52,6 +52,8 @@ export function TeamBudgetForm({ teamId }: TeamBudgetFormProps) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (loading) return;
+    
     setLoading(true);
 
     try {
@@ -70,6 +72,7 @@ export function TeamBudgetForm({ teamId }: TeamBudgetFormProps) {
 
       if (!res.ok) {
         toast.error(data.error ?? "Failed to create budget");
+        setLoading(false);
         return;
       }
 
@@ -78,7 +81,6 @@ export function TeamBudgetForm({ teamId }: TeamBudgetFormProps) {
       router.refresh();
     } catch {
       toast.error("Something went wrong. Please try again.");
-    } finally {
       setLoading(false);
     }
   }

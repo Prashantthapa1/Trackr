@@ -61,7 +61,9 @@ export function TeamBudgetDashboard({ teamId }: { teamId: string }) {
   return (
     <div className="space-y-3">
       {budgets.map((budget) => {
-        const pct = budget.amount > 0 ? (budget.spent / budget.amount) * 100 : 0;
+        const amount = budget.amount || 0;
+        const spent = budget.spent || 0;
+        const pct = amount > 0 ? (spent / amount) * 100 : 0;
         const isOver = pct >= 100;
         const isWarning = pct >= 80 && pct < 100;
 
@@ -117,8 +119,8 @@ export function TeamBudgetDashboard({ teamId }: { teamId: string }) {
             </div>
 
             <div className="mt-1.5 flex justify-between text-xs text-muted-foreground">
-              <span>${budget.spent.toFixed(2)} spent</span>
-              <span>${budget.amount.toFixed(2)} budget</span>
+              <span>${(budget.spent || 0).toFixed(2)} spent</span>
+              <span>${(budget.amount || 0).toFixed(2)} budget</span>
             </div>
           </div>
         );

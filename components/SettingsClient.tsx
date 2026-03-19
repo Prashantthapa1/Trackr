@@ -134,7 +134,7 @@ export function SettingsClient({ user }: SettingsClientProps) {
   }
 
   return (
-    <div className="w-full max-w-2xl space-y-6">
+    <div className="w-full space-y-6">
       {/* Account Info */}
       <Card className="border-green-200/50 dark:border-green-800/30">
         <CardHeader>

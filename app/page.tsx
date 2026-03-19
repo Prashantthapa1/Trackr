@@ -65,7 +65,7 @@ export default async function HomePage() {
             <div className="animate-fade-up">
               <span className="hero-badge mb-6">
                 <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse-dot" />
-                Now in beta — join 10,000+ teams
+                Now in beta — join 100+ users
               </span>
             </div>
 
@@ -85,7 +85,7 @@ export default async function HomePage() {
             <div className="mt-8 flex justify-center gap-4 animate-fade-up-delay-3">
               <Link href="/register">
                 <Button size="lg">
-                  Start free trial
+                  Get Started
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
@@ -105,7 +105,7 @@ export default async function HomePage() {
                 <div className="avatar" style={{ background: 'linear-gradient(135deg, #86efac, #15803d)' }}>TL</div>
               </div>
               <div className="stars mt-2">★★★★★</div>
-              <p className="text-sm text-muted-foreground mt-1">Loved by 10,000+ teams worldwide</p>
+              <p className="text-sm text-muted-foreground mt-1">Loved by 100+ users worldwide</p>
             </div>
 
             {/* Dashboard Mockup */}
@@ -200,7 +200,7 @@ export default async function HomePage() {
           <div className="max-w-7xl mx-auto relative z-10">
             <div className="grid gap-8 text-center sm:grid-cols-2 lg:grid-cols-4">
               {[
-                { value: "10k+", label: "Teams using Trackr daily" },
+                { value: "100+", label: "Users tracking daily" },
                 { value: "98%", label: "Customer satisfaction score" },
                 { value: "3.4x", label: "Average productivity boost" },
                 { value: "28h", label: "Saved per team per month" },
@@ -231,7 +231,7 @@ export default async function HomePage() {
                 <ul className="mt-6 space-y-3 text-sm text-muted-foreground">
                   <li className="flex items-center gap-2"><span className="text-green-500">✓</span> 10 expenses per month</li>
                   <li className="flex items-center gap-2"><span className="text-green-500">✓</span> 3 categories</li>
-                  <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Basic currencies</li>
+                  <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Standard support</li>
                   <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Single workspace</li>
                 </ul>
                 <Link href="/register" className="block mt-8">
@@ -254,7 +254,7 @@ export default async function HomePage() {
                 </ul>
                 <Link href="/register" className="block mt-8">
                   <Button className="w-full bg-white text-green-700 hover:bg-green-50 hover:text-green-800">
-                    Start free trial
+                    Get started
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </Link>
@@ -290,19 +290,19 @@ export default async function HomePage() {
               Ready to grow at<br />a different pace?
             </h2>
             <p className="mt-4 text-lg text-green-200/70 max-w-2xl mx-auto">
-              Join thousands of teams who moved faster, worked smarter, and never looked back.
-              Your first 14 days are on us.
+              Join teams who moved faster, worked smarter, and never looked back.
+              Upgrade anytime you want.
             </p>
             <div className="mt-8">
               <Link href="/register">
                 <Button size="lg">
-                  Start free trial
+                  Get Started
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
             </div>
             <p className="mt-6 text-sm text-green-200/50">
-              No credit card required · 14-day free trial · Cancel anytime
+              No credit card required · Upgrade later · Cancel anytime
             </p>
           </div>
         </section>

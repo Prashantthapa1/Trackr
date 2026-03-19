@@ -49,7 +49,7 @@ export function ProGate({ title, description }: ProGateProps) {
             Upgrade to Pro
           </Button>
           <p className="mt-3 text-sm text-muted-foreground">
-            Starting at NPR 399/month
+            Starting at $5/month
           </p>
         </CardContent>
       </Card>

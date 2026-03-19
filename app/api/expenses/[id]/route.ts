@@ -13,6 +13,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth-helpers";
 import { decrementUsage } from "@/lib/usage";
 import { updateExpenseSchema } from "@/types";
+import { logTeamActivity } from "@/lib/team-activity";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -29,17 +30,34 @@ export async function PATCH(
 
   const { id } = await context.params;
 
-  // Verify ownership
+  // Verify ownership or team permissions for edit
   const existing = await prisma.expense.findUnique({
     where: { id },
-    select: { userId: true },
+    select: { userId: true, teamId: true },
   });
 
   if (!existing) {
     return NextResponse.json({ error: "Expense not found" }, { status: 404 });
   }
 
-  if (existing.userId !== user.id) {
+  let isAllowed = existing.userId === user.id;
+
+  if (!isAllowed && existing.teamId) {
+    const team = await prisma.team.findUnique({ where: { id: existing.teamId } });
+    if (team?.ownerId === user.id) {
+      isAllowed = true;
+    } else {
+      const membership = await prisma.teamMember.findUnique({
+        where: { teamId_userId: { teamId: existing.teamId, userId: user.id } }
+      });
+      // Members and Admins can edit team expenses. Viewers cannot.
+      if (membership && (membership.role === "ADMIN" || membership.role === "MEMBER")) {
+        isAllowed = true;
+      }
+    }
+  }
+
+  if (!isAllowed) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -97,24 +115,51 @@ export async function DELETE(
 
   const { id } = await context.params;
 
-  // Verify ownership
+  // Verify ownership or team permissions for delete
   const existing = await prisma.expense.findUnique({
     where: { id },
-    select: { userId: true },
+    select: { userId: true, teamId: true, amount: true, description: true, category: true },
   });
 
   if (!existing) {
     return NextResponse.json({ error: "Expense not found" }, { status: 404 });
   }
 
-  if (existing.userId !== user.id) {
+  let isAllowed = existing.userId === user.id;
+
+  if (!isAllowed && existing.teamId) {
+    const team = await prisma.team.findUnique({ where: { id: existing.teamId } });
+    if (team?.ownerId === user.id) {
+      isAllowed = true;
+    } else {
+      const membership = await prisma.teamMember.findUnique({
+        where: { teamId_userId: { teamId: existing.teamId, userId: user.id } }
+      });
+      // Allow only the expense creator or team admins to delete expenses
+      if (membership?.role === "ADMIN") {
+        isAllowed = true;
+      }
+    }
+  }
+
+  if (!isAllowed) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   await prisma.expense.delete({ where: { id } });
 
-  // Decrement usage counter
-  await decrementUsage(user.id);
+  // Log Team Activity if it's a team expense!
+  if (existing.teamId) {
+    await logTeamActivity(
+      existing.teamId,
+      user.id,
+      "EXPENSE_DELETED",
+      `${user.name || user.email} deleted an expense of NPR ${existing.amount} (${existing.category || "Uncategorized"})`
+    );
+  } else {
+    // Decrement usage counter only for personal expenses (Team expenses don't count towards personal limit)
+    await decrementUsage(user.id);
+  }
 
   return NextResponse.json({ success: true });
 }

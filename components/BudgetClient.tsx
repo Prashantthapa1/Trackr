@@ -62,6 +62,8 @@ export function BudgetClient({
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
+    if (loading) return;
+    
     setLoading(true);
     try {
       const payload = {
