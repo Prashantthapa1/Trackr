@@ -173,11 +173,10 @@ export default async function HomePage() {
             </div>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {[
-                { icon: Receipt, title: "Smart Tracking", desc: "Log expenses in seconds with AI-powered categorization and receipt uploads." },
+                { icon: Receipt, title: "Smart Tracking", desc: "Log expenses in seconds with easy categorization and receipt uploads." },
                 { icon: BarChart3, title: "Live Analytics", desc: "Real-time dashboards give your team instant clarity on spending patterns." },
                 { icon: Users, title: "Team Collaboration", desc: "Multiplayer workspaces with shared budgets and activity tracking." },
-                { icon: Target, title: "Budget Goals", desc: "Set spending limits and get alerts before overspending on any category." },
-                { icon: Sparkles, title: "AI Insights", desc: "Get smart recommendations to optimize spending and find savings." },
+                { icon: Target, title: "Budget Goals", desc: "Set spending limits and track progress on any category." },
                 { icon: ArrowRight, title: "Easy Export", desc: "One-click PDF and CSV exports for accounting and reporting." },
               ].map((feature, i) => (
                 <div
@@ -228,12 +227,12 @@ export default async function HomePage() {
               <div className="pricing-card scroll-reveal">
                 <p className="text-sm font-semibold text-green-600 dark:text-green-400 uppercase tracking-wide">Starter</p>
                 <p className="mt-4 font-heading text-4xl font-extrabold text-foreground">$0</p>
-                <p className="text-sm text-muted-foreground">Free forever · up to 3 users</p>
+                <p className="text-sm text-muted-foreground">Free forever</p>
                 <ul className="mt-6 space-y-3 text-sm text-muted-foreground">
-                  <li className="flex items-center gap-2"><span className="text-green-500">✓</span> 50 expenses per month</li>
-                  <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Basic categories</li>
+                  <li className="flex items-center gap-2"><span className="text-green-500">✓</span> 10 expenses per month</li>
+                  <li className="flex items-center gap-2"><span className="text-green-500">✓</span> 3 categories</li>
+                  <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Basic currencies</li>
                   <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Single workspace</li>
-                  <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Community support</li>
                 </ul>
                 <Link href="/register" className="block mt-8">
                   <Button className="w-full" variant="outline">Get started free</Button>
@@ -243,34 +242,34 @@ export default async function HomePage() {
               {/* Pro - Featured */}
               <div className="pricing-card featured scroll-reveal" data-delay="100">
                 <span className="absolute right-4 top-4 rounded-full bg-green-400 px-3 py-1 text-xs font-bold text-green-900">Most Popular</span>
-                <p className="text-sm font-semibold text-green-400 uppercase tracking-wide">Growth</p>
-                <p className="mt-4 font-heading text-4xl font-extrabold text-white">$19</p>
-                <p className="text-sm text-green-200">per month · up to 10 users</p>
+                <p className="text-sm font-semibold text-green-400 uppercase tracking-wide">Pro</p>
+                <p className="mt-4 font-heading text-4xl font-extrabold text-white">$5</p>
+                <p className="text-sm text-green-200">per month · or $30/year</p>
                 <ul className="mt-6 space-y-3 text-sm text-green-100">
-                  <li className="flex items-center gap-2"><span>✓</span> Unlimited expenses</li>
-                  <li className="flex items-center gap-2"><span>✓</span> Advanced analytics</li>
-                  <li className="flex items-center gap-2"><span>✓</span> Team workspaces</li>
-                  <li className="flex items-center gap-2"><span>✓</span> Priority support</li>
-                  <li className="flex items-center gap-2"><span>✓</span> AI-powered insights</li>
+                  <li className="flex items-center gap-2"><span>✓</span> 150+ expenses/month</li>
+                  <li className="flex items-center gap-2"><span>✓</span> Unlimited categories</li>
+                  <li className="flex items-center gap-2"><span>✓</span> Team workspaces (5 members)</li>
+                  <li className="flex items-center gap-2"><span>✓</span> Visual reports & charts</li>
+                  <li className="flex items-center gap-2"><span>✓</span> PDF & CSV exports</li>
                 </ul>
                 <Link href="/register" className="block mt-8">
                   <Button className="w-full bg-white text-green-700 hover:bg-green-50 hover:text-green-800">
-                    Start 14-day trial
+                    Start free trial
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </Link>
               </div>
 
-              {/* Enterprise */}
+              {/* Annual */}
               <div className="pricing-card scroll-reveal" data-delay="200">
-                <p className="text-sm font-semibold text-green-600 dark:text-green-400 uppercase tracking-wide">Enterprise</p>
-                <p className="mt-4 font-heading text-4xl font-extrabold text-foreground">Custom</p>
-                <p className="text-sm text-muted-foreground">Unlimited users · SLA included</p>
+                <p className="text-sm font-semibold text-green-600 dark:text-green-400 uppercase tracking-wide">Pro Annual</p>
+                <p className="mt-4 font-heading text-4xl font-extrabold text-foreground">$30</p>
+                <p className="text-sm text-muted-foreground">per year · save 50%</p>
                 <ul className="mt-6 space-y-3 text-sm text-muted-foreground">
-                  <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Everything in Growth</li>
-                  <li className="flex items-center gap-2"><span className="text-green-500">✓</span> SSO & SAML</li>
-                  <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Custom integrations</li>
-                  <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Dedicated CSM</li>
+                  <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Everything in Pro</li>
+                  <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Unlimited expenses</li>
+                  <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Priority support</li>
+                  <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Receipt uploads</li>
                 </ul>
                 <Link href="/register" className="block mt-8">
                   <Button className="w-full" variant="outline">Get started</Button>

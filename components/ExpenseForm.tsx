@@ -42,7 +42,7 @@ export function ExpenseForm({ categories, plan, usage }: ExpenseFormProps) {
     e.preventDefault();
 
     if (plan === "FREE" && usage.count >= usage.limit) {
-      toast.error("You've reached your free limit of 50 expenses this month!");
+      toast.error(`You've reached your free limit of ${usage.limit} expenses this month!`);
       setShowUpgrade(true);
       return;
     }
@@ -76,7 +76,7 @@ export function ExpenseForm({ categories, plan, usage }: ExpenseFormProps) {
       toast.success("Expense added!");
 
       if (plan === "FREE" && usage.count + 1 >= usage.limit) {
-        toast.warning("You've reached your monthly limit of 50 expenses!");
+        toast.warning(`You've reached your monthly limit of ${usage.limit} expenses!`);
         setShowUpgrade(true);
       }
 

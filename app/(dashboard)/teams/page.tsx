@@ -22,15 +22,7 @@ import { Badge } from "@/components/ui/badge";
 export default async function TeamsPage() {
   const user = await requireAuth();
 
-  if (user.plan === "FREE") {
-    return (
-      <ProGate
-        title="Team Workspaces"
-        description="Create team workspaces, invite collaborators, and track shared expenses together with role-based access control."
-      />
-    );
-  }
-
+  // Fetch teams and invitations first - FREE users can still be members via invites
   const [teams, invitations] = await Promise.all([
     prisma.teamMember.findMany({
       where: { userId: user.id },
@@ -57,6 +49,19 @@ export default async function TeamsPage() {
     }),
   ]);
 
+  // Only show ProGate if FREE user has NO teams and NO invitations
+  // FREE users who were invited can still access their teams
+  if (user.plan === "FREE" && teams.length === 0 && invitations.length === 0) {
+    return (
+      <ProGate
+        title="Team Workspaces"
+        description="Create team workspaces, invite collaborators, and track shared expenses together with role-based access control."
+      />
+    );
+  }
+
+  const canCreateTeam = user.plan !== "FREE";
+
   return (
     <div className="space-y-8 fade-in">
       {/* Header */}
@@ -67,12 +72,14 @@ export default async function TeamsPage() {
             Manage your team workspaces and collaborations.
           </p>
         </div>
-        <Link href="/teams/new">
-          <Button className="gap-2 rounded-xl shadow-lg shadow-primary/25">
-            <Plus className="h-4 w-4" />
-            New Team
-          </Button>
-        </Link>
+        {canCreateTeam && (
+          <Link href="/teams/new">
+            <Button className="gap-2 rounded-xl shadow-lg shadow-primary/25">
+              <Plus className="h-4 w-4" />
+              New Team
+            </Button>
+          </Link>
+        )}
       </div>
 
       {/* Pending Invitations */}
@@ -117,15 +124,19 @@ export default async function TeamsPage() {
           <div>
             <h3 className="text-lg font-semibold">No teams yet</h3>
             <p className="text-sm text-muted-foreground">
-              Create your first team to start collaborating.
+              {canCreateTeam
+                ? "Create your first team to start collaborating."
+                : "You'll see teams here when someone invites you."}
             </p>
           </div>
-          <Link href="/teams/new">
-            <Button className="gap-2 rounded-xl">
-              <Plus className="h-4 w-4" />
-              Create Team
-            </Button>
-          </Link>
+          {canCreateTeam && (
+            <Link href="/teams/new">
+              <Button className="gap-2 rounded-xl">
+                <Plus className="h-4 w-4" />
+                Create Team
+              </Button>
+            </Link>
+          )}
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

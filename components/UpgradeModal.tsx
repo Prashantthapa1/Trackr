@@ -38,18 +38,17 @@ declare global {
 }
 
 const proFeatures = [
-  "Unlimited expenses per month",
+  "150+ expenses per month (unlimited with annual)",
   "Unlimited custom categories",
   "All currencies supported",
   "Receipt image uploads",
   "5-person team workspaces",
   "PDF & CSV export",
   "Visual reports & charts",
-  "Ask AI mock insights",
 ];
 
 const freeFeatures = [
-  "50 expenses per month",
+  "10 expenses per month",
   "3 categories",
   "NPR + USD only",
 ];
@@ -86,19 +85,44 @@ export function UpgradeModal({
   }, []);
 
   function handleCheckout() {
-    const priceId = annual
-      ? process.env.NEXT_PUBLIC_PADDLE_PRICE_ANNUAL
-      : process.env.NEXT_PUBLIC_PADDLE_PRICE_MONTHLY;
+    console.log("[UpgradeModal] Starting checkout...");
+    console.log("[UpgradeModal] Annual:", annual);
 
-    if (window.Paddle && priceId) {
-      window.Paddle.Checkout.open({
-        items: [{ priceId, quantity: 1 }],
-        customer: userEmail ? { email: userEmail } : undefined,
-        settings: {
-          successUrl: `${window.location.origin}/dashboard?upgraded=true`,
-          theme: "light",
-        },
-      });
+    const priceIdMonthly = process.env.NEXT_PUBLIC_PADDLE_PRICE_MONTHLY;
+    const priceIdAnnual = process.env.NEXT_PUBLIC_PADDLE_PRICE_ANNUAL;
+    const priceId = annual ? priceIdAnnual : priceIdMonthly;
+
+    console.log("[UpgradeModal] Monthly Price ID:", priceIdMonthly || "MISSING!");
+    console.log("[UpgradeModal] Annual Price ID:", priceIdAnnual || "MISSING!");
+    console.log("[UpgradeModal] Selected Price ID:", priceId || "MISSING!");
+
+    if (!priceId) {
+      console.error("[UpgradeModal] ERROR: No price ID!");
+      return;
+    }
+
+    if (!window.Paddle) {
+      console.error("[UpgradeModal] ERROR: Paddle not loaded!");
+      return;
+    }
+
+    const checkoutConfig = {
+      items: [{ priceId, quantity: 1 }],
+      customer: userEmail ? { email: userEmail } : undefined,
+      settings: {
+        displayMode: "overlay" as const,
+        successUrl: `${window.location.origin}/dashboard?upgraded=true`,
+        theme: "light" as const,
+      },
+    };
+
+    console.log("[UpgradeModal] Config:", JSON.stringify(checkoutConfig, null, 2));
+
+    try {
+      window.Paddle.Checkout.open(checkoutConfig);
+      console.log("[UpgradeModal] Checkout.open() called");
+    } catch (error) {
+      console.error("[UpgradeModal] Error:", error);
     }
   }
 
@@ -148,14 +172,14 @@ export function UpgradeModal({
           {/* Price */}
           <div className="text-center">
             <div className="font-heading text-4xl font-bold text-foreground">
-              NPR {annual ? "399" : "499"}
+              ${annual ? "30" : "5"}
               <span className="text-lg font-normal text-muted-foreground">
-                /mo
+                {annual ? "/year" : "/mo"}
               </span>
             </div>
             {annual && (
-              <p className="text-sm text-muted-foreground">
-                Billed annually at NPR 4,788/year
+              <p className="text-sm text-green-600 font-medium">
+                Save 50% + unlimited expenses
               </p>
             )}
           </div>
@@ -200,7 +224,7 @@ export function UpgradeModal({
             onClick={handleCheckout}
           >
             <Sparkles className="mr-2 h-4 w-4" />
-            Upgrade to Pro — NPR {annual ? "399" : "499"}/mo
+            Upgrade to Pro — ${annual ? "30/year" : "5/mo"}
           </Button>
         </div>
       </DialogContent>

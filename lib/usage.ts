@@ -9,14 +9,18 @@
  */
 import { prisma } from "@/lib/prisma";
 
-const FREE_LIMIT = 50;
+const FREE_LIMIT = 10;
+const PRO_LIMIT = 150; // Monthly PRO limit; Annual PRO is unlimited
 
 function getCurrentMonth(): string {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
-export async function getMonthlyUsage(userId: string): Promise<{
+export async function getMonthlyUsage(
+  userId: string,
+  plan: string = "FREE"
+): Promise<{
   count: number;
   limit: number;
   month: string;
@@ -27,9 +31,13 @@ export async function getMonthlyUsage(userId: string): Promise<{
     where: { userId_month: { userId, month } },
   });
 
+  // Determine limit based on plan
+  // Note: Annual PRO users have unlimited, but we use a high number for display
+  const limit = plan === "FREE" ? FREE_LIMIT : PRO_LIMIT;
+
   return {
     count: usage?.count ?? 0,
-    limit: FREE_LIMIT,
+    limit,
     month,
   };
 }
@@ -65,10 +73,12 @@ export async function isAtLimit(
   userId: string,
   plan: string
 ): Promise<boolean> {
+  // PRO users (both monthly and annual) are not limited by this check
+  // PRO monthly has a soft limit of 150 shown in UI but not enforced server-side
   if (plan !== "FREE") return false;
 
-  const { count } = await getMonthlyUsage(userId);
+  const { count } = await getMonthlyUsage(userId, plan);
   return count >= FREE_LIMIT;
 }
 
-export { FREE_LIMIT };
+export { FREE_LIMIT, PRO_LIMIT };

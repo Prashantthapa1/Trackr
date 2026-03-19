@@ -17,12 +17,14 @@ import {
   ChevronRight,
   Receipt,
   Crown,
+  Plus,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TeamActivityFeed } from "@/components/team/TeamActivityFeed";
 import { TeamBudgetDashboard } from "@/components/team/TeamBudgetDashboard";
+import { TeamExpensesList } from "@/components/team/TeamExpensesList";
 
 export default async function TeamDashboardPage({
   params,
@@ -51,6 +53,7 @@ export default async function TeamDashboardPage({
 
   const team = membership.team;
   const isAdmin = membership.role === "ADMIN";
+  const canAddExpense = membership.role !== "VIEWER";
 
   // Get this month's spending
   const now = new Date();
@@ -92,7 +95,21 @@ export default async function TeamDashboardPage({
             Owned by {team.owner.name ?? team.owner.email}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          {canAddExpense && (
+            <Link href={`/teams/${teamId}/expenses/new`}>
+              <Button className="gap-2 rounded-xl shadow-lg shadow-primary/25">
+                <Plus className="h-4 w-4" />
+                Add Expense
+              </Button>
+            </Link>
+          )}
+          <Link href={`/teams/${teamId}/expenses`}>
+            <Button variant="outline" className="gap-2 rounded-xl">
+              <Receipt className="h-4 w-4" />
+              View Expenses
+            </Button>
+          </Link>
           {isAdmin && (
             <Link href={`/teams/${teamId}/members`}>
               <Button variant="outline" className="gap-2 rounded-xl">
@@ -188,17 +205,44 @@ export default async function TeamDashboardPage({
         </Card>
 
         <Card className="rounded-2xl border-border/50">
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <Target className="h-5 w-5 text-primary" />
               Budget Progress
             </CardTitle>
+            {isAdmin && (
+              <Link href={`/teams/${teamId}/budgets/new`}>
+                <Button variant="outline" size="sm" className="gap-1.5 rounded-lg">
+                  <Plus className="h-3.5 w-3.5" />
+                  Add Budget
+                </Button>
+              </Link>
+            )}
           </CardHeader>
           <CardContent>
             <TeamBudgetDashboard teamId={teamId} />
           </CardContent>
         </Card>
       </div>
+
+      {/* Recent Team Expenses */}
+      <Card className="rounded-2xl border-border/50">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Receipt className="h-5 w-5 text-primary" />
+            Recent Expenses
+          </CardTitle>
+          <Link
+            href={`/teams/${teamId}/expenses`}
+            className="text-sm text-primary hover:underline"
+          >
+            View all →
+          </Link>
+        </CardHeader>
+        <CardContent>
+          <TeamExpensesList teamId={teamId} limit={5} />
+        </CardContent>
+      </Card>
 
       {/* Team Members Preview */}
       <Card className="rounded-2xl border-border/50">

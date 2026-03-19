@@ -27,21 +27,33 @@ interface UpgradePricingClientProps {
 
 const freePlan = {
   name: "Free",
-  price: "NPR 0",
+  price: "$0",
   features: [
-    { text: "50 expenses per month", included: true },
+    { text: "10 expenses per month", included: true },
     { text: "3 categories", included: true },
-    { text: "NPR + USD currencies", included: true },
+    { text: "Basic currencies (NPR, USD)", included: true },
     { text: "Receipt uploads", included: false },
     { text: "Team workspaces", included: false },
     { text: "Visual reports", included: false },
     { text: "PDF/CSV export", included: false },
-    { text: "Ask AI insights", included: false },
   ],
 };
 
-const proPlan = {
-  name: "Pro",
+const proMonthlyPlan = {
+  name: "Pro Monthly",
+  features: [
+    { text: "150 expenses per month", included: true },
+    { text: "Unlimited categories", included: true },
+    { text: "All currencies", included: true },
+    { text: "Receipt uploads", included: true },
+    { text: "5-person team workspaces", included: true },
+    { text: "Visual reports & charts", included: true },
+    { text: "PDF/CSV export", included: true },
+  ],
+};
+
+const proAnnualPlan = {
+  name: "Pro Annual",
   features: [
     { text: "Unlimited expenses", included: true },
     { text: "Unlimited categories", included: true },
@@ -50,7 +62,6 @@ const proPlan = {
     { text: "5-person team workspaces", included: true },
     { text: "Visual reports & charts", included: true },
     { text: "PDF/CSV export", included: true },
-    { text: "Ask AI insights", included: true },
   ],
 };
 
@@ -61,11 +72,14 @@ export function UpgradePricingClient({ user }: UpgradePricingClientProps) {
   const [annual, setAnnual] = useState(false);
   const [confettiFired, setConfettiFired] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
+  const [paddleError, setPaddleError] = useState<string | null>(null);
 
   const isPro = user.plan !== "FREE";
-  const monthlyPrice = 499;
-  const annualPrice = 399;
+  const monthlyPrice = 5;  // Paddle has $5/mo
+  const annualPrice = 30;
   const displayPrice = annual ? annualPrice : monthlyPrice;
+  const displayPriceLabel = annual ? "/year" : "/mo";
+  const proPlan = annual ? proAnnualPlan : proMonthlyPlan;
   const isDev = process.env.NODE_ENV === "development";
 
   useEffect(() => {
@@ -90,32 +104,68 @@ export function UpgradePricingClient({ user }: UpgradePricingClientProps) {
       script.onload = () => {
         if (window.Paddle) {
           const env = process.env.NEXT_PUBLIC_PADDLE_ENV ?? "sandbox";
+          const clientToken = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
+
           if (env === "sandbox") {
             window.Paddle.Environment.set("sandbox");
           }
+
+          if (!clientToken) {
+            console.error("Client token is missing!");
+            return;
+          }
+
           window.Paddle.Setup({
-            token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN,
+            token: clientToken,
+            eventCallback: (event: { name: string; data?: unknown }) => {
+              if (event.name === "checkout.error") {
+                setPaddleError("Checkout failed. Please check the console for details.");
+              } else if (event.name === "checkout.payment.failed") {
+                setPaddleError("Payment declined by Paddle. Please verify your card details are correct or try a different test card.");
+              }
+            },
           });
         }
+      };
+      script.onerror = (error) => {
+        console.error("Failed to load Paddle script:", error);
       };
       document.head.appendChild(script);
     }
   }, []);
 
   function handleCheckout() {
-    const priceId = annual
-      ? process.env.NEXT_PUBLIC_PADDLE_PRICE_ANNUAL
-      : process.env.NEXT_PUBLIC_PADDLE_PRICE_MONTHLY;
+    const priceIdMonthly = process.env.NEXT_PUBLIC_PADDLE_PRICE_MONTHLY;
+    const priceIdAnnual = process.env.NEXT_PUBLIC_PADDLE_PRICE_ANNUAL;
+    const priceId = annual ? priceIdAnnual : priceIdMonthly;
 
-    if (window.Paddle && priceId) {
-      window.Paddle.Checkout.open({
-        items: [{ priceId, quantity: 1 }],
-        customer: { email: user.email },
-        settings: {
-          successUrl: `${window.location.origin}/upgrade?upgraded=true`,
-          theme: "light",
-        },
-      });
+    if (!priceId) {
+      setPaddleError("Payment is not configured yet. Please contact support or try again later.");
+      return;
+    }
+
+    if (!window.Paddle) {
+      setPaddleError("Payment system is loading. Please wait a moment and try again.");
+      return;
+    }
+
+    setPaddleError(null);
+
+    const checkoutConfig = {
+      items: [{ priceId, quantity: 1 }],
+      customer: { email: user.email },
+      settings: {
+        displayMode: "overlay" as const,
+        successUrl: `${window.location.origin}/upgrade?upgraded=true`,
+        theme: "light" as const,
+      },
+    };
+
+    try {
+      window.Paddle.Checkout.open(checkoutConfig);
+    } catch (error) {
+      console.error("Paddle checkout error:", error);
+      setPaddleError("Failed to open checkout. Please try again or contact support.");
     }
   }
 
@@ -237,12 +287,12 @@ export function UpgradePricingClient({ user }: UpgradePricingClientProps) {
             <CardDescription className="font-body">For power users & teams</CardDescription>
             <div className="mt-4">
               <span className="font-heading text-4xl font-bold text-foreground">
-                NPR {displayPrice}
+                ${displayPrice}
               </span>
-              <span className="text-muted-foreground">/month</span>
+              <span className="text-muted-foreground">{displayPriceLabel}</span>
               {annual && (
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Billed annually at NPR {annualPrice * 12}/year
+                <p className="mt-1 text-sm text-green-600 font-medium">
+                  Save 50% compared to monthly
                 </p>
               )}
             </div>
@@ -258,9 +308,14 @@ export function UpgradePricingClient({ user }: UpgradePricingClientProps) {
             </ul>
             {!isPro && (
               <div className="space-y-3">
+                {paddleError && (
+                  <div className="rounded-xl border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800/50 p-3 text-sm text-red-700 dark:text-red-300">
+                    {paddleError}
+                  </div>
+                )}
                 <Button className="w-full" size="lg" onClick={handleCheckout}>
                   <Sparkles className="mr-2 h-4 w-4" />
-                  Upgrade — NPR {displayPrice}/mo
+                  Upgrade — ${displayPrice}{displayPriceLabel}
                 </Button>
                 {isDev && (
                   <Button
