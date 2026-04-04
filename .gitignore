@@ -25,6 +25,15 @@ yarn-error.log*
 # local env files
 .env
 .env*.local
+.env.production
+.env.*.local
+
+# Sensitive files - NEVER commit
+*.pem
+.env*
+!.env.example
+scripts/create-admin.ts
+scripts/set-password.js
 
 # vercel
 .vercel
