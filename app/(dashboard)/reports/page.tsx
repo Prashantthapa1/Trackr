@@ -57,16 +57,16 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
         select: { category: true, amount: true },
       }),
       prisma.expense.findMany({
-        where: { userId: user.id, teamId: null, budgetId: { not: null }, date: { gte: thisMonthStart, lt: new Date(now.getFullYear(), now.getMonth() + 1, 1) } },
-        select: { budgetId: true, amount: true },
-      }),
-      prisma.expense.findMany({
         where: {
           userId: user.id,
           teamId: null,
           date: { gte: lastMonthStart, lt: thisMonthStart },
         },
         select: { category: true, amount: true },
+      }),
+      prisma.expense.findMany({
+        where: { userId: user.id, teamId: null, budgetId: { not: null }, date: { gte: thisMonthStart, lt: new Date(now.getFullYear(), now.getMonth() + 1, 1) } },
+        select: { budgetId: true, amount: true },
       }),
     ]);
 
