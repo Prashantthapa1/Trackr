@@ -13,24 +13,29 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UsageRing } from "@/components/UsageRing";
 import { ExpenseForm } from "@/components/ExpenseForm";
 import { ExpenseTable } from "@/components/ExpenseTable";
-import { DollarSign, TrendingUp, CreditCard, Calendar, Target, ArrowRight } from "lucide-react";
+import { DollarSign, TrendingUp, CreditCard, Calendar, Target, ArrowRight, Wallet } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
   const user = await requireAuth();
+  const requestedPage = Number((await searchParams).page ?? "1");
+  const page = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+  const pageSize = 10;
 
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
-  const [expenses, usage, monthTotal, budgets, categorySpending] = await Promise.all([
+  const [expenses, expenseCount, usage, monthTotal, overallTotal, budgets, categorySpending] = await Promise.all([
     prisma.expense.findMany({
       where: { userId: user.id, teamId: null },
       orderBy: { date: "desc" },
-      take: 50,
+      skip: (page - 1) * pageSize,
+      take: pageSize,
     }),
+    prisma.expense.count({ where: { userId: user.id, teamId: null } }),
     getMonthlyUsage(user.id),
     prisma.expense.aggregate({
       where: {
@@ -40,6 +45,10 @@ export default async function DashboardPage() {
       },
       _sum: { amount: true },
       _count: true,
+    }),
+    prisma.expense.aggregate({
+      where: { userId: user.id, teamId: null },
+      _sum: { amount: true },
     }),
     prisma.budget.findMany({
       where: { userId: user.id },
@@ -62,6 +71,7 @@ export default async function DashboardPage() {
   }
 
   const totalThisMonth = monthTotal._sum.amount ?? 0;
+  const totalOverall = overallTotal._sum.amount ?? 0;
   const countThisMonth = monthTotal._count ?? 0;
   const avgExpense = countThisMonth > 0 ? totalThisMonth / countThisMonth : 0;
 
@@ -161,6 +171,19 @@ export default async function DashboardPage() {
         <Card className="group animate-fade-up-delay-3">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
+              <div className="stat-icon-box bg-gradient-to-br from-indigo-100 to-indigo-50 dark:from-indigo-900/30 dark:to-indigo-900/10 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300">
+                <Wallet className="h-6 w-6 text-indigo-500" />
+              </div>
+            </div>
+            <p className="text-sm font-medium text-muted-foreground mb-1">Total Expenses</p>
+            <p className="font-heading text-2xl font-bold text-foreground">{formatCurrency(totalOverall, "NPR")}</p>
+            <p className="text-xs text-muted-foreground mt-2">all time</p>
+          </CardContent>
+        </Card>
+
+        <Card className="group animate-fade-up-delay-4">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
               <div className="stat-icon-box bg-gradient-to-br from-green-100 to-green-50 dark:from-green-900/30 dark:to-green-900/10 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300">
                 <TrendingUp className="h-6 w-6 text-green-500" />
               </div>
@@ -173,7 +196,7 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="group animate-fade-up-delay-4">
+        <Card className="group animate-fade-up-delay-5">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="stat-icon-box bg-gradient-to-br from-purple-100 to-purple-50 dark:from-purple-900/30 dark:to-purple-900/10 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300">
@@ -257,7 +280,7 @@ export default async function DashboardPage() {
           <CardTitle className="font-heading">Recent Expenses</CardTitle>
         </CardHeader>
         <CardContent>
-          <ExpenseTable expenses={serializedExpenses} plan={user.plan} />
+          <ExpenseTable expenses={serializedExpenses} plan={user.plan} page={page} pages={Math.max(1, Math.ceil(expenseCount / pageSize))} />
         </CardContent>
       </Card>
 

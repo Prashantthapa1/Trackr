@@ -10,7 +10,7 @@
  * We limit file size to 4MB (Vercel Blob free tier limit).
  */
 import { NextResponse, type NextRequest } from "next/server";
-import { put } from "@vercel/blob";
+import { createHash } from "crypto";
 import { getSession } from "@/lib/auth-helpers";
 
 const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB
@@ -59,12 +59,34 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    const blob = await put(`receipts/${user.id}/${Date.now()}-${file.name}`, file, {
-      access: "public",
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    const apiSecret = process.env.CLOUDINARY_API_SECRET;
+    if (!cloudName || !apiSecret) {
+      return NextResponse.json({ error: "Cloudinary is not configured" }, { status: 503 });
+    }
+
+    const timestamp = Math.floor(Date.now() / 1000);
+    const folder = `trackr/receipts/${user.id}`;
+    const signature = createHash("sha1")
+      .update(`folder=${folder}&timestamp=${timestamp}${apiSecret}`)
+      .digest("hex");
+    const uploadData = new FormData();
+    uploadData.append("file", file);
+    uploadData.append("api_key", process.env.CLOUDINARY_API_KEY ?? "");
+    uploadData.append("timestamp", String(timestamp));
+    uploadData.append("folder", folder);
+    uploadData.append("signature", signature);
+    const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, {
+      method: "POST",
+      body: uploadData,
     });
+    const result = await response.json();
+    if (!response.ok || !result.secure_url) {
+      throw new Error(result.error?.message ?? "Cloudinary upload failed");
+    }
 
     return NextResponse.json(
-      { success: true, data: { url: blob.url } },
+      { success: true, data: { url: result.secure_url } },
       { status: 201 }
     );
   } catch (err) {

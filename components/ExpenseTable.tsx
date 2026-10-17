@@ -29,17 +29,19 @@ import {
 import { formatCurrency } from "@/lib/currency";
 import { EXPENSE_CATEGORIES } from "@/types";
 import type { ExpenseRow } from "@/types";
-import { ArrowUpDown, Trash2, FileImage, Loader2, Pencil, Search, Receipt } from "lucide-react";
+import { ArrowUpDown, ChevronLeft, ChevronRight, Trash2, FileImage, Loader2, Pencil, Search, Receipt } from "lucide-react";
 
 interface ExpenseTableProps {
   expenses: ExpenseRow[];
   plan: string;
+  page: number;
+  pages: number;
 }
 
 type SortField = "date" | "amount" | "category";
 type SortDir = "asc" | "desc";
 
-export function ExpenseTable({ expenses, plan }: ExpenseTableProps) {
+export function ExpenseTable({ expenses, plan, page, pages }: ExpenseTableProps) {
   const router = useRouter();
   const [sortField, setSortField] = useState<SortField>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -142,6 +144,10 @@ export function ExpenseTable({ expenses, plan }: ExpenseTableProps) {
     } finally {
       setDeletingId(null);
     }
+  }
+
+  function goToPage(nextPage: number) {
+    router.push(nextPage === 1 ? "/dashboard" : `/dashboard?page=${nextPage}`);
   }
 
   if (expenses.length === 0) {
@@ -305,6 +311,20 @@ export function ExpenseTable({ expenses, plan }: ExpenseTableProps) {
           </table>
         </div>
       </div>
+
+      {pages > 1 && (
+        <div className="mt-4 flex items-center justify-between border-t pt-4">
+          <p className="text-sm text-muted-foreground">Page {page} of {pages}</p>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => goToPage(page - 1)} disabled={page <= 1}>
+              <ChevronLeft className="mr-1 h-4 w-4" /> Previous
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => goToPage(page + 1)} disabled={page >= pages}>
+              Next <ChevronRight className="ml-1 h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Edit Dialog */}
       <Dialog open={!!editExpense} onOpenChange={(open) => !open && setEditExpense(null)}>
