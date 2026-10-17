@@ -32,6 +32,7 @@ import {
   Pencil,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
+import Link from "next/link";
 
 interface BudgetClientProps {
   budgets: BudgetRow[];
@@ -121,6 +122,7 @@ export function BudgetClient({
   }
 
   function getSpent(budget: BudgetRow): number {
+    if (budget.spent !== undefined) return budget.spent;
     if (budget.category) {
       return spendingByCategory[budget.category] ?? 0;
     }
@@ -228,6 +230,9 @@ export function BudgetClient({
                         : `${formatCurrency(Math.abs(remaining), "NPR")} over!`}
                     </span>
                   </div>
+                  <Link href={`/budgets/${budget.id}`} className="mt-4 inline-block text-sm font-medium text-green-600 hover:underline dark:text-green-400">
+                    View budget expenses →
+                  </Link>
                   {pct >= 100 && (
                     <p className="mt-3 text-xs font-medium text-red-500">
                       Budget exceeded! Consider reducing spending.

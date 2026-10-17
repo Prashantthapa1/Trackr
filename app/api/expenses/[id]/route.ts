@@ -84,6 +84,14 @@ export async function PATCH(
     );
   }
 
+  if (parsed.data.budgetId !== undefined) {
+    if (parsed.data.budgetId) {
+      const budget = await prisma.budget.findFirst({ where: { id: parsed.data.budgetId, userId: user.id } });
+      if (!budget) return NextResponse.json({ error: "Budget not found" }, { status: 404 });
+    }
+    updateData.budgetId = parsed.data.budgetId;
+  }
+
   const expense = await prisma.expense.update({
     where: { id },
     data: updateData,
@@ -99,6 +107,7 @@ export async function PATCH(
       description: expense.description,
       date: expense.date.toISOString(),
       receiptUrl: expense.receiptUrl,
+      budgetId: expense.budgetId,
       createdAt: expense.createdAt.toISOString(),
     },
   });

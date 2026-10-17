@@ -55,6 +55,7 @@ export function ExpenseTable({ expenses, plan, page, pages }: ExpenseTableProps)
   const [editCategory, setEditCategory] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editDate, setEditDate] = useState("");
+  const [editReceipt, setEditReceipt] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
 
   function toggleSort(field: SortField) {
@@ -72,12 +73,22 @@ export function ExpenseTable({ expenses, plan, page, pages }: ExpenseTableProps)
     setEditCategory(expense.category);
     setEditDescription(expense.description ?? "");
     setEditDate(expense.date.split("T")[0]);
+    setEditReceipt(null);
   }
 
   async function handleSaveEdit() {
     if (!editExpense) return;
     setSaving(true);
     try {
+      let receiptUrl: string | undefined;
+      if (editReceipt) {
+        const uploadData = new FormData();
+        uploadData.append("file", editReceipt);
+        const uploadResponse = await fetch("/api/receipts/upload", { method: "POST", body: uploadData });
+        const uploadResult = await uploadResponse.json();
+        if (!uploadResponse.ok) { toast.error(uploadResult.error ?? "Failed to upload receipt"); return; }
+        receiptUrl = uploadResult.data.url;
+      }
       const res = await fetch(`/api/expenses/${editExpense.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -86,6 +97,7 @@ export function ExpenseTable({ expenses, plan, page, pages }: ExpenseTableProps)
           category: editCategory,
           description: editDescription || undefined,
           date: editDate,
+          ...(receiptUrl ? { receiptUrl } : {}),
         }),
       });
       if (!res.ok) {
@@ -374,6 +386,11 @@ export function ExpenseTable({ expenses, plan, page, pages }: ExpenseTableProps)
                 value={editDate}
                 onChange={(e) => setEditDate(e.target.value)}
               />
+            </div>
+            <div className="space-y-2">
+              <Label>Replace receipt image (optional)</Label>
+              <Input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={(event) => setEditReceipt(event.target.files?.[0] ?? null)} disabled={saving} />
+              {editExpense?.receiptUrl && <a className="text-xs text-green-600 hover:underline" href={editExpense.receiptUrl} target="_blank" rel="noreferrer">View current receipt</a>}
             </div>
           </div>
           <DialogFooter>

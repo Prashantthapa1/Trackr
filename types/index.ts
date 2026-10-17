@@ -19,6 +19,7 @@ export const createExpenseSchema = z.object({
   description: z.string().max(500).optional(),
   date: z.string().optional(),
   receiptUrl: z.string().url().optional(),
+  budgetId: z.string().cuid().optional().nullable(),
   tags: z.array(z.string().max(30)).max(10).optional(),
 });
 
@@ -37,6 +38,7 @@ export interface ExpenseRow {
   receiptUrl: string | null;
   tags: string[];
   createdAt: string;
+  budgetId: string | null;
 }
 
 // ============================================================
@@ -214,6 +216,7 @@ export interface BudgetRow {
   category: string | null;
   startDate: string;
   createdAt: string;
+  spent?: number;
 }
 
 // ============================================================

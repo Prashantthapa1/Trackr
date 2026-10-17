@@ -83,8 +83,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const { amount, currency, category, description, date, receiptUrl } =
+  const { amount, currency, category, description, date, receiptUrl, budgetId } =
     parsed.data;
+
+  if (budgetId) {
+    const budget = await prisma.budget.findFirst({ where: { id: budgetId, userId: user.id } });
+    if (!budget) return NextResponse.json({ error: "Budget not found" }, { status: 404 });
+  }
 
   // Receipt uploads are Pro-only
   if (receiptUrl && user.plan === "FREE") {
@@ -102,6 +107,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       description,
       date: date ? new Date(date) : new Date(),
       receiptUrl,
+      budgetId,
       userId: user.id,
     },
   });
@@ -120,6 +126,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         description: expense.description,
         date: expense.date.toISOString(),
         receiptUrl: expense.receiptUrl,
+        budgetId: expense.budgetId,
         createdAt: expense.createdAt.toISOString(),
       },
       usage: { count: newCount },

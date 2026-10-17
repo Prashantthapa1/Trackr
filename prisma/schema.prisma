@@ -102,10 +102,14 @@ model Expense {
   teamId         String?
   team           Team?          @relation(fields: [teamId], references: [id], onDelete: SetNull)
 
+  budgetId       String?
+  budget         Budget?        @relation(fields: [budgetId], references: [id], onDelete: SetNull)
+
   createdAt      DateTime       @default(now())
 
   @@index([userId, date])
   @@index([teamId, date])
+  @@index([budgetId, date])
 }
 
 // ─── USAGE ───────────────────────────────────────────────────────────
@@ -276,6 +280,7 @@ model Budget {
   startDate DateTime @default(now())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expenses  Expense[]
   createdAt DateTime @default(now())
 
   @@index([userId])

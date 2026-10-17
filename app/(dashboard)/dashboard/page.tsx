@@ -103,6 +103,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     date: e.date.toISOString(),
     receiptUrl: e.receiptUrl,
     tags: e.tags ?? [],
+    budgetId: e.budgetId,
     createdAt: e.createdAt.toISOString(),
   }));
 
@@ -124,7 +125,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Card className="group animate-fade-up-delay-1">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
@@ -175,7 +176,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                 <Wallet className="h-6 w-6 text-indigo-500" />
               </div>
             </div>
-            <p className="text-sm font-medium text-muted-foreground mb-1">Total Expenses</p>
+            <p className="text-sm font-medium text-muted-foreground mb-1">Total Expenses (All Time)</p>
             <p className="font-heading text-2xl font-bold text-foreground">{formatCurrency(totalOverall, "NPR")}</p>
             <p className="text-xs text-muted-foreground mt-2">all time</p>
           </CardContent>

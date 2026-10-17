@@ -26,9 +26,10 @@ interface ExpenseFormProps {
   categories: string[];
   plan: string;
   usage: UsageInfo;
+  budgetId?: string;
 }
 
-export function ExpenseForm({ categories, plan, usage }: ExpenseFormProps) {
+export function ExpenseForm({ categories, plan, usage, budgetId }: ExpenseFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -79,6 +80,7 @@ export function ExpenseForm({ categories, plan, usage }: ExpenseFormProps) {
           description: description || undefined,
           date,
           receiptUrl,
+          budgetId,
         }),
       });
 

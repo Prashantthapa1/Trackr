@@ -18,7 +18,7 @@ export default async function BudgetsPage() {
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
   // Fetch budgets and expenses in parallel
-  const [budgets, categorySpending, totalSpent] = await Promise.all([
+  const [budgets, categorySpending, totalSpent, linkedSpending] = await Promise.all([
     prisma.budget.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },
@@ -40,7 +40,13 @@ export default async function BudgetsPage() {
       },
       _sum: { amount: true },
     }),
+    prisma.expense.groupBy({
+      by: ["budgetId"],
+      where: { userId: user.id, teamId: null, budgetId: { not: null }, date: { gte: monthStart, lt: monthEnd } },
+      _sum: { amount: true },
+    }),
   ]);
+  const spendingByBudget = Object.fromEntries(linkedSpending.map((item) => [item.budgetId, item._sum.amount ?? 0]));
 
   const spendingByCategory = Object.fromEntries(
     categorySpending.flatMap((c) => {
@@ -61,6 +67,7 @@ export default async function BudgetsPage() {
     category: b.category ? b.category.trim() : null,
     startDate: b.startDate.toISOString(),
     createdAt: b.createdAt.toISOString(),
+    spent: spendingByBudget[b.id] ?? 0,
   }));
 
   return (
