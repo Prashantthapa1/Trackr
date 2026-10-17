@@ -10,7 +10,7 @@ import { prisma } from "@/lib/prisma";
 import { ReportsClient } from "@/components/ReportsClient";
 import { ProGate } from "@/components/ProGate";
 
-export default async function ReportsPage() {
+export default async function ReportsPage({ searchParams }: { searchParams: Promise<{ start?: string; end?: string }> }) {
   const user = await requireAuth();
 
   if (user.plan === "FREE") {
@@ -23,6 +23,11 @@ export default async function ReportsPage() {
   }
 
   const now = new Date();
+  const params = await searchParams;
+  const parsedStart = params.start ? new Date(`${params.start}T00:00:00`) : null;
+  const parsedEnd = params.end ? new Date(`${params.end}T23:59:59.999`) : null;
+  const reportStart = parsedStart && !Number.isNaN(parsedStart.getTime()) ? parsedStart : new Date(now.getFullYear() - 1, now.getMonth(), 1);
+  const reportEnd = parsedEnd && !Number.isNaN(parsedEnd.getTime()) ? parsedEnd : now;
   const twelveMonthsAgo = new Date();
   twelveMonthsAgo.setMonth(now.getMonth() - 12);
 
@@ -30,13 +35,13 @@ export default async function ReportsPage() {
   const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
   // Fetch all data in parallel
-  const [expenses, budgets, thisMonthExpenses, lastMonthExpenses] =
+  const [expenses, budgets, thisMonthExpenses, lastMonthExpenses, linkedBudgetExpenses] =
     await Promise.all([
       prisma.expense.findMany({
         where: {
           userId: user.id,
           teamId: null,
-          date: { gte: twelveMonthsAgo },
+          date: { gte: reportStart, lte: reportEnd },
         },
         orderBy: { date: "asc" },
       }),
@@ -50,6 +55,10 @@ export default async function ReportsPage() {
           date: { gte: thisMonthStart },
         },
         select: { category: true, amount: true },
+      }),
+      prisma.expense.findMany({
+        where: { userId: user.id, teamId: null, budgetId: { not: null }, date: { gte: thisMonthStart, lt: new Date(now.getFullYear(), now.getMonth() + 1, 1) } },
+        select: { budgetId: true, amount: true },
       }),
       prisma.expense.findMany({
         where: {
@@ -107,6 +116,10 @@ export default async function ReportsPage() {
     }, new Map<string, number>())
   );
   const totalMonthSpend = thisMonthExpenses.reduce((s: number, e) => s + e.amount, 0);
+  const spendingByBudget: Record<string, number> = {};
+  for (const expense of linkedBudgetExpenses) {
+    if (expense.budgetId) spendingByBudget[expense.budgetId] = (spendingByBudget[expense.budgetId] ?? 0) + expense.amount;
+  }
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const dayOfMonth = now.getDate();
 
@@ -118,6 +131,7 @@ export default async function ReportsPage() {
     category: b.category,
     startDate: b.startDate.toISOString(),
     createdAt: b.createdAt.toISOString(),
+    spent: spendingByBudget[b.id] ?? 0,
   }));
 
   // Comparative data: this month vs last month per category
@@ -155,6 +169,10 @@ export default async function ReportsPage() {
           daysInMonth={daysInMonth}
           dayOfMonth={dayOfMonth}
           comparisonData={comparisonData}
+          selectedTotal={expenses.reduce((sum, expense) => sum + expense.amount, 0)}
+          reportExpenses={expenses.map((expense) => ({ id: expense.id, amount: expense.amount, currency: expense.currency, category: expense.category, description: expense.description, date: expense.date.toISOString(), receiptUrl: expense.receiptUrl }))}
+          startDate={params.start ?? reportStart.toISOString().slice(0, 10)}
+          endDate={params.end ?? reportEnd.toISOString().slice(0, 10)}
         />
       </div>
     </div>

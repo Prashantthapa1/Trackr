@@ -169,7 +169,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           </CardContent>
         </Card>
 
-        <Card className="group animate-fade-up-delay-3">
+        <Card className="group order-first animate-fade-up-delay-3">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="stat-icon-box bg-gradient-to-br from-indigo-100 to-indigo-50 dark:from-indigo-900/30 dark:to-indigo-900/10 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300">

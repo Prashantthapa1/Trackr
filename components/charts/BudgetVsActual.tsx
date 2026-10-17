@@ -37,9 +37,11 @@ export function BudgetVsActual({
       </CardHeader>
       <CardContent className="space-y-5">
         {budgets.map((budget) => {
-          const spent = budget.category
-            ? (spendingByCategory[budget.category] ?? 0)
-            : totalMonthSpend;
+          const spent = budget.spent !== undefined
+            ? budget.spent
+            : budget.category
+              ? (spendingByCategory[budget.category] ?? 0)
+              : totalMonthSpend;
           const pct = budget.amount > 0 ? (spent / budget.amount) * 100 : 0;
           const isOver = pct > 100;
 

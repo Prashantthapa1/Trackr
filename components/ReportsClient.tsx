@@ -24,7 +24,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatNPR } from "@/lib/currency";
 import type { MonthlyData, CategoryData, BudgetRow } from "@/types";
-import { Download, FileText, Loader2, BarChart3 } from "lucide-react";
+import { Download, FileText, Loader2, BarChart3, CalendarDays } from "lucide-react";
 import { SpendingHeatmap } from "@/components/charts/SpendingHeatmap";
 import { BudgetVsActual } from "@/components/charts/BudgetVsActual";
 import { ComparativeChart } from "@/components/charts/ComparativeChart";
@@ -50,6 +50,10 @@ interface ReportsClientProps {
   daysInMonth?: number;
   dayOfMonth?: number;
   comparisonData?: ComparisonData[];
+  selectedTotal: number;
+  reportExpenses: Array<{ id: string; amount: number; currency: string; category: string; description: string | null; date: string; receiptUrl: string | null }>;
+  startDate: string;
+  endDate: string;
 }
 
 const COLORS = [
@@ -82,6 +86,10 @@ export function ReportsClient({
   daysInMonth,
   dayOfMonth,
   comparisonData,
+  selectedTotal,
+  reportExpenses,
+  startDate,
+  endDate,
 }: ReportsClientProps) {
   const [downloading, setDownloading] = useState<"csv" | "pdf" | null>(null);
 
@@ -124,6 +132,14 @@ export function ReportsClient({
 
   return (
     <div className="space-y-8">
+      <Card className="border-green-200/50 dark:border-green-800/30">
+        <CardContent className="flex flex-wrap items-end gap-4 p-6">
+          <div><label className="mb-1 block text-sm font-medium">From</label><input className="rounded-md border bg-background px-3 py-2" type="date" defaultValue={startDate} id="report-start" /></div>
+          <div><label className="mb-1 block text-sm font-medium">To</label><input className="rounded-md border bg-background px-3 py-2" type="date" defaultValue={endDate} id="report-end" /></div>
+          <Button type="button" onClick={() => { const start = (document.getElementById("report-start") as HTMLInputElement).value; const end = (document.getElementById("report-end") as HTMLInputElement).value; window.location.href = `/reports?start=${start}&end=${end}`; }}><CalendarDays className="mr-2 h-4 w-4" />Apply dates</Button>
+          <div className="ml-auto"><p className="text-sm text-muted-foreground">Selected period total</p><p className="text-2xl font-bold text-green-600">{formatNPR(selectedTotal)}</p></div>
+        </CardContent>
+      </Card>
       {/* Export Buttons */}
       <div className="flex items-center gap-3">
         <span className="text-sm font-medium text-muted-foreground">Export:</span>
@@ -286,6 +302,11 @@ export function ReportsClient({
       {comparisonData && comparisonData.length > 0 && (
         <ComparativeChart data={comparisonData} />
       )}
+
+      <Card>
+        <CardHeader><CardTitle>Expenses in selected period</CardTitle></CardHeader>
+        <CardContent><div className="divide-y">{reportExpenses.slice().reverse().map((expense) => <div key={expense.id} className="flex justify-between gap-4 py-3"><div><p className="font-medium">{expense.category}</p><p className="text-sm text-muted-foreground">{expense.description || "No description"} · {new Date(expense.date).toLocaleDateString()}</p></div><span className="font-semibold">{formatNPR(expense.amount)}</span></div>)}</div></CardContent>
+      </Card>
     </div>
   );
 }
